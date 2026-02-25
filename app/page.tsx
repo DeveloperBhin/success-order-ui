@@ -1,75 +1,61 @@
 // app/success/[orderId]/page.tsx
-'use client';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
+// Server Component fetches transaction data
 interface Transaction {
-  id: string;
-  amount: number;
+  transactionId: string;
   status: string;
+  amount: string;
+  selcomStatus: string;
 }
 
 interface Props {
   params: { orderId: string };
 }
 
-export default function SuccessPage({ params }: Props) {
+export default async function SuccessPage({ params }: Props) {
   const { orderId } = params;
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchTransaction = async () => {
-      try {
-        const res = await fetch(
-          `https://api.senjaropay.com/senjaropay/paybylink/payment-redirect/${orderId}`,
-          { cache: 'no-store' }
-        );
+  let transaction: Transaction | null = null;
 
-        if (!res.ok) throw new Error('Failed to fetch transaction');
+  try {
+    const res = await fetch(
+      `https://api.senjaropay.com/senjaropay/paybylink/payment-redirect${orderId}`,
+      { cache: 'no-store' } // ensures fresh data
+    );
 
-        const data = await res.json();
-        setTransaction(data);
-      } catch (err) {
-        setError('Error loading transaction. Please try again.');
-      }
+    if (!res.ok) throw new Error('Failed to fetch transaction');
+
+    const data = await res.json();
+
+    transaction = {
+      transactionId: data.transactionId,
+      status: data.status,
+      amount: data.selcom?.amount || '0',
+      selcomStatus: data.selcomStatus,
     };
-
-    fetchTransaction();
-  }, [orderId]);
-
-  if (error) {
+  } catch (error) {
     return (
       <div style={{ textAlign: 'center', marginTop: '40vh' }}>
-        {error}
+        Error loading transaction. Please try again.
       </div>
     );
   }
 
-  if (!transaction) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '40vh' }}>
-        Loading...
-      </div>
-    );
-  }
-
-  // Download receipt function
   const downloadReceipt = () => {
-    if (!transaction) return;
-
     const receipt = `
 ✅ Senjoro Pay Receipt
 
-Transaction ID: ${transaction.id}
+Transaction ID: ${transaction.transactionId}
 Amount: $${transaction.amount}
-Status: ${transaction.status}
+Status: ${transaction.status} (${transaction.selcomStatus})
 
 Thank you for your payment!
     `;
     const blob = new Blob([receipt], { type: 'text/plain' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `receipt_${transaction.id}.txt`;
+    link.download = `receipt_${transaction.transactionId}.txt`;
     link.click();
     URL.revokeObjectURL(link.href);
   };
@@ -79,10 +65,12 @@ Thank you for your payment!
       <div style={styles.card as React.CSSProperties}>
         <div style={styles.logo as React.CSSProperties}>Senjoro Pay</div>
 
-        <h1 style={styles.title}>✅ Payment Success!</h1>
-        <p style={styles.subtitle}>Transaction ID: {transaction.id}</p>
+        <h1 style={styles.title}>
+          {transaction.status === 'SUCCESS' ? '✅ Payment Success!' : '❌ Payment Failed'}
+        </h1>
+        <p style={styles.subtitle}>Transaction ID: {transaction.transactionId}</p>
         <p style={styles.subtitle}>Amount: ${transaction.amount}</p>
-        <p style={styles.subtitle}>Status: {transaction.status}</p>
+        <p style={styles.subtitle}>Status: {transaction.status} ({transaction.selcomStatus})</p>
 
         <button style={styles.downloadBtn as React.CSSProperties} onClick={downloadReceipt}>
           ⬇️ Download receipt
@@ -94,6 +82,7 @@ Thank you for your payment!
   );
 }
 
+// styles
 const styles = {
   page: {
     minHeight: '100vh',
