@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 interface Transaction {
   transactionId: string;
@@ -16,55 +17,74 @@ interface Props {
 
 export default function SuccessPage({ params }: Props) {
   const { orderId } = params;
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get('session') || ''; // read ?session= from URL
+
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Temporary state to store user-provided x-session-id
-  const [sessionId, setSessionId] = useState('9f2991be-8c76-4efc-9340-d90c6fa1c647');
-
-  const fetchTransaction = async (sessionIdValue: string) => {
-    try {
-      const res = await fetch('https://api.senjaropay.com/senjaropay/paybylink/checkStatus', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-session-id': sessionIdValue, // <-- pass it here
-        },
-        body: JSON.stringify({ transactionId: orderId }),
-      });
-
-      if (!res.ok) throw new Error('Failed to fetch transaction');
-
-      const data = await res.json();
-
-      setTransaction({
-        transactionId: data.transactionId,
-        status: data.status,
-        selcomStatus: data.selcomStatus,
-        amount: data.selcom?.amount || '0',
-        creationDate: data.selcom?.creation_date || '',
-      });
-      setLoading(false);
-    } catch (err) {
+  useEffect(() => {
+    if (!sessionId) {
       setError(true);
       setLoading(false);
-    }
-  };
-
-  const handleFetch = () => {
-    if (!sessionId.trim()) {
-      alert('Please enter your session ID');
       return;
     }
-    setLoading(true);
-    setError(false);
-    fetchTransaction(sessionId.trim());
-  };
+
+    const fetchTransaction = async () => {
+      try {
+        const res = await fetch(
+          'https://api.senjaropay.com/senjaropay/paybylink/checkStatus',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-session-id': sessionId, // pass session
+            },
+            body: JSON.stringify({ transactionId: orderId }),
+          }
+        );
+
+        if (!res.ok) throw new Error('Failed to fetch transaction');
+
+        const data = await res.json();
+
+        setTransaction({
+          transactionId: data.transactionId,
+          status: data.status,
+          selcomStatus: data.selcomStatus,
+          amount: data.selcom?.amount || '0',
+          creationDate: data.selcom?.creation_date || '',
+        });
+
+        setLoading(false);
+      } catch (err) {
+        setError(true);
+        setLoading(false);
+      }
+    };
+
+    fetchTransaction();
+  }, [orderId, sessionId]);
+
+  if (loading)
+    return <div style={{ textAlign: 'center', marginTop: '40vh' }}>Loading...</div>;
+
+  if (error || !transaction)
+    return (
+      <div style={{ textAlign: 'center', marginTop: '20vh' }}>
+        <h2>Error loading transaction</h2>
+        <p>
+          Make sure your session ID is correct and included in the URL as
+          <br />
+          <code>?session=YOUR_SESSION_ID</code>
+        </p>
+      </div>
+    );
+
+  const isSuccess = transaction.status === 'SUCCESS';
 
   const downloadReceipt = () => {
-    if (!transaction) return;
-
     const receipt = `
 ✅ Senjoro Pay Receipt
 
@@ -82,28 +102,6 @@ Thank you for using Senjoro Pay!
     link.click();
     URL.revokeObjectURL(link.href);
   };
-
-  if (loading)
-    return <div style={{ textAlign: 'center', marginTop: '40vh' }}>Loading...</div>;
-  if (error || !transaction)
-    return (
-      <div style={{ textAlign: 'center', marginTop: '20vh' }}>
-        <h2>Error loading transaction</h2>
-        <p>Please enter your session ID to access your transaction:</p>
-        <input
-          type="text"
-          placeholder="x-session-id"
-          value={sessionId}
-          onChange={(e) => setSessionId(e.target.value)}
-          style={{ padding: 8, width: 300, marginRight: 8 }}
-        />
-        <button onClick={handleFetch} style={{ padding: '8px 16px' }}>
-          Fetch Transaction
-        </button>
-      </div>
-    );
-
-  const isSuccess = transaction.status === 'SUCCESS';
 
   return (
     <div style={{ textAlign: 'center', padding: 32 }}>
