@@ -1,5 +1,6 @@
-// app/success/[orderId]/page.tsx
-import React from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 
 interface Transaction {
   transactionId: string;
@@ -9,47 +10,43 @@ interface Transaction {
   creationDate?: string;
 }
 
-interface Props {
-  params: { orderId: string };
-}
-
-export default async function SuccessPage({ params }: Props) {
+export default function SuccessPage({ params }: { params: { orderId: string } }) {
   const { orderId } = params;
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  let transaction: Transaction | null = null;
+  useEffect(() => {
+    const fetchTransaction = async () => {
+      try {
+        const res = await fetch('https://api.senjaropay.com/senjaropay/paybylink/checkStatus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transactionId: orderId })
+        });
+        const data = await res.json();
 
-  try {
-   const res = await fetch(
-  `https://api.senjaropay.com/senjaropay/paybylink/payment-redirect/${orderId}`,
-  { cache: 'no-store' }
-);
-
-console.log('Status:', res.status, 'OK?', res.ok);
-const text = await res.text();
-console.log('Body:', text);
-
-    if (!res.ok) throw new Error('Failed to fetch transaction');
-
-    const data = await res.json();
-
-    transaction = {
-      transactionId: data.transactionId,
-      status: data.status,
-      selcomStatus: data.selcomStatus,
-      amount: data.selcom?.amount || '0',
-      creationDate: data.selcom?.creation_date || '',
+        setTransaction({
+          transactionId: data.transactionId,
+          status: data.status,
+          selcomStatus: data.selcomStatus,
+          amount: data.selcom?.amount || '0',
+          creationDate: data.selcom?.creation_date || '',
+        });
+        setLoading(false);
+      } catch (err) {
+        setError(true);
+        setLoading(false);
+      }
     };
-  } catch (error) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '40vh' }}>
-        Error loading transaction. Please try again.
-      </div>
-    );
-  }
+    fetchTransaction();
+  }, [orderId]);
 
+  if (loading) return <div style={{ textAlign: 'center', marginTop: '40vh' }}>Loading...</div>;
+  if (error || !transaction) return <div style={{ textAlign: 'center', marginTop: '40vh' }}>Error loading transaction. Please try again.</div>;
+
+  const isSuccess = transaction.status === 'SUCCESS';
   const downloadReceipt = () => {
-    if (!transaction) return;
-
     const receipt = `
 ✅ Senjoro Pay Receipt
 
@@ -68,95 +65,14 @@ Thank you for using Senjoro Pay!
     URL.revokeObjectURL(link.href);
   };
 
-  const isSuccess = transaction.status === 'SUCCESS';
-  const title = isSuccess ? '✅ Payment Success!' : '❌ Payment Failed';
-  const subtitle = isSuccess
-    ? 'Your payment was successful.'
-    : 'Your payment could not be completed.';
-
   return (
-    <div style={styles.page as React.CSSProperties}>
-      <div style={styles.card as React.CSSProperties}>
-        <div style={styles.logo as React.CSSProperties}>Senjoro Pay</div>
-
-        <h1 style={styles.title}>{title}</h1>
-        <p style={styles.subtitle}>Transaction ID: {transaction.transactionId}</p>
-        <p style={styles.subtitle}>Amount: ${transaction.amount}</p>
-        <p style={styles.subtitle}>
-          Status: {transaction.status} ({transaction.selcomStatus})
-        </p>
-        <p style={styles.subtitle}>{subtitle}</p>
-
-        <button style={styles.downloadBtn as React.CSSProperties} onClick={downloadReceipt}>
-          ⬇️ Download receipt
-        </button>
-
-        {!isSuccess && (
-          <a
-            href={`https://paylink-senjaropay.com/pay/${orderId}`}
-            style={styles.retryBtn as React.CSSProperties}
-          >
-            🔄 Retry Payment
-          </a>
-        )}
-
-        <div style={styles.footer as React.CSSProperties}>Powered by Senjoro Pay</div>
-      </div>
+    <div style={{ textAlign: 'center', padding: 32 }}>
+      <h1>{isSuccess ? '✅ Payment Success!' : '❌ Payment Failed'}</h1>
+      <p>Transaction ID: {transaction.transactionId}</p>
+      <p>Amount: ${transaction.amount}</p>
+      <p>Status: {transaction.status} ({transaction.selcomStatus})</p>
+      <button onClick={downloadReceipt}>⬇️ Download receipt</button>
+      {!isSuccess && <a href={`https://paylink-senjaropay.com/pay/${transaction.transactionId}`}>🔄 Retry Payment</a>}
     </div>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#f7f7f9',
-    padding: 24,
-  },
-  card: {
-    width: 600,
-    maxWidth: '95%',
-    background: 'white',
-    borderRadius: 18,
-    padding: '36px 36px 28px',
-    boxShadow: '0 10px 30px rgba(16,24,40,0.08)',
-    textAlign: 'center' as const,
-    position: 'relative' as const,
-  },
-  logo: {
-    position: 'absolute' as const,
-    left: 24,
-    top: 18,
-    fontSize: 14,
-    color: '#2b2b2b',
-    fontWeight: 600,
-    opacity: 0.7,
-  },
-  title: { margin: '18px 0 6px', fontSize: 24, fontWeight: 700, color: '#111827' },
-  subtitle: { margin: '6px 0', color: '#6b7280', fontSize: 14 },
-  downloadBtn: {
-    marginTop: 20,
-    width: '100%',
-    padding: '14px 18px',
-    borderRadius: 999,
-    background: '#166534',
-    color: 'white',
-    border: 'none',
-    fontSize: 16,
-    cursor: 'pointer',
-  },
-  retryBtn: {
-    display: 'inline-block',
-    marginTop: 12,
-    padding: '12px 18px',
-    borderRadius: 999,
-    background: '#b91c1c',
-    color: 'white',
-    fontSize: 16,
-    textDecoration: 'none',
-    cursor: 'pointer',
-  },
-  footer: { marginTop: 18, color: '#9ca3af', fontSize: 12 },
-};
