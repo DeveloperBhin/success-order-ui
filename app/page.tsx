@@ -25,33 +25,35 @@ export default function SuccessPage() {
       <div style={styles.card}>
         <div style={styles.logo}>Senjoro<br/>Pay</div>
 
-        <div style={styles.iconWrap}>
+        <div style={styles.iconWrap as React.CSSProperties}>
           <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="12" cy="12" r="12" fill="#DFF5EA" />
-            <path d="M7 12.5l2.5 2.5L17 7" stroke="#1A8A5A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M7 12.5l2.5 2.5L17 7" stroke="#1A8A5A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
 
-        <h1 style={styles.title}>Success!</h1>
-        <p style={styles.subtitle}>Your payment has been processed successfully</p>
+        <h1 style={styles.title as React.CSSProperties}>Success!</h1>
+        <p style={styles.subtitle as React.CSSProperties}>
+          Your payment has been processed successfully
+        </p>
 
-        <div style={styles.infoCard}>
-          <div style={styles.infoRow}>
-            <div style={styles.infoLabel}>Transaction ID</div>
-            <div style={styles.infoValue}>{transactionId}</div>
+        <div style={styles.infoCard as React.CSSProperties}>
+          <div style={styles.infoRow as React.CSSProperties}>
+            <div style={styles.infoLabel as React.CSSProperties}>Transaction ID</div>
+            <div style={styles.infoValue as React.CSSProperties}>{transactionId}</div>
           </div>
 
-          <div style={{...styles.infoRow, marginTop: 14}}>
-            <div style={styles.infoLabel}>Amount</div>
-            <div style={styles.infoValue}>{amount}</div>
+          <div style={{ ...styles.infoRow, marginTop: 14 } as React.CSSProperties}>
+            <div style={styles.infoLabel as React.CSSProperties}>Amount</div>
+            <div style={styles.infoValue as React.CSSProperties}>{amount}</div>
           </div>
         </div>
 
-        <button style={styles.downloadBtn} onClick={downloadReceipt}>
+        <button style={styles.downloadBtn as React.CSSProperties} onClick={downloadReceipt}>
           ⬇️ Download receipt
         </button>
 
-        <div style={styles.footer}>Powered by Senjoro Pay</div>
+        <div style={styles.footer as React.CSSProperties}>Powered by Senjoro Pay</div>
       </div>
     </div>
   );
@@ -73,53 +75,53 @@ const styles = {
     borderRadius: 18,
     padding: '36px 36px 28px',
     boxShadow: '0 10px 30px rgba(16,24,40,0.08)',
-    textAlign: 'center',
-    position: 'relative'
+    textAlign: 'center' as const,
+    position: 'relative' as const,
   },
   logo: {
-    position: 'absolute',
+    position: 'absolute' as const,
     left: 24,
     top: 18,
     fontSize: 14,
     color: '#2b2b2b',
     fontWeight: 600,
-    opacity: 0.7
+    opacity: 0.7,
   },
   iconWrap: {
     display: 'flex',
     justifyContent: 'center',
-    marginTop: 12
+    marginTop: 12,
   },
   title: {
     margin: '18px 0 6px',
     fontSize: 24,
     fontWeight: 700,
-    color: '#111827'
+    color: '#111827',
   },
   subtitle: {
     margin: 0,
     color: '#6b7280',
-    fontSize: 14
+    fontSize: 14,
   },
   infoCard: {
     marginTop: 26,
     background: '#f3f4f6',
     borderRadius: 12,
     padding: 18,
-    textAlign: 'left'
+    textAlign: 'left' as const,
   },
   infoRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   infoLabel: {
     color: '#6b7280',
-    fontSize: 14
+    fontSize: 14,
   },
   infoValue: {
     color: '#111827',
-    fontWeight: 600
+    fontWeight: 600,
   },
   downloadBtn: {
     marginTop: 20,
@@ -130,11 +132,11 @@ const styles = {
     color: 'white',
     border: 'none',
     fontSize: 16,
-    cursor: 'pointer'
+    cursor: 'pointer',
   },
   footer: {
     marginTop: 18,
     color: '#9ca3af',
-    fontSize: 12
-  }
+    fontSize: 12,
+  },
 };
