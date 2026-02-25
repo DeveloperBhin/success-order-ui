@@ -20,7 +20,7 @@ export default async function SuccessPage({ params }: Props) {
 
   try {
     const res = await fetch(
-      `https://api.senjaropay.com/senjaropay/paybylink/payment-redirect${orderId}`,
+      `https://api.senjaropay.com/senjaropay/paybylink/payment-redirect/${orderId}`,
       { cache: 'no-store' }
     );
 
