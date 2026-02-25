@@ -19,10 +19,14 @@ export default async function SuccessPage({ params }: Props) {
   let transaction: Transaction | null = null;
 
   try {
-    const res = await fetch(
-      `https://api.senjaropay.com/senjaropay/paybylink/payment-redirect/${orderId}`,
-      { cache: 'no-store' }
-    );
+   const res = await fetch(
+  `https://api.senjaropay.com/senjaropay/paybylink/payment-redirect/${orderId}`,
+  { cache: 'no-store' }
+);
+
+console.log('Status:', res.status, 'OK?', res.ok);
+const text = await res.text();
+console.log('Body:', text);
 
     if (!res.ok) throw new Error('Failed to fetch transaction');
 
