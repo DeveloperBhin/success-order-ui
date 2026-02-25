@@ -1,12 +1,12 @@
 // app/success/[orderId]/page.tsx
 import React from 'react';
 
-// Server Component fetches transaction data
 interface Transaction {
   transactionId: string;
   status: string;
-  amount: string;
   selcomStatus: string;
+  amount: string;
+  creationDate?: string;
 }
 
 interface Props {
@@ -21,7 +21,7 @@ export default async function SuccessPage({ params }: Props) {
   try {
     const res = await fetch(
       `https://api.senjaropay.com/senjaropay/paybylink/payment-redirect${orderId}`,
-      { cache: 'no-store' } // ensures fresh data
+      { cache: 'no-store' }
     );
 
     if (!res.ok) throw new Error('Failed to fetch transaction');
@@ -31,8 +31,9 @@ export default async function SuccessPage({ params }: Props) {
     transaction = {
       transactionId: data.transactionId,
       status: data.status,
-      amount: data.selcom?.amount || '0',
       selcomStatus: data.selcomStatus,
+      amount: data.selcom?.amount || '0',
+      creationDate: data.selcom?.creation_date || '',
     };
   } catch (error) {
     return (
@@ -43,14 +44,17 @@ export default async function SuccessPage({ params }: Props) {
   }
 
   const downloadReceipt = () => {
+    if (!transaction) return;
+
     const receipt = `
 ✅ Senjoro Pay Receipt
 
 Transaction ID: ${transaction.transactionId}
 Amount: $${transaction.amount}
 Status: ${transaction.status} (${transaction.selcomStatus})
+Date: ${transaction.creationDate}
 
-Thank you for your payment!
+Thank you for using Senjoro Pay!
     `;
     const blob = new Blob([receipt], { type: 'text/plain' });
     const link = document.createElement('a');
@@ -60,21 +64,37 @@ Thank you for your payment!
     URL.revokeObjectURL(link.href);
   };
 
+  const isSuccess = transaction.status === 'SUCCESS';
+  const title = isSuccess ? '✅ Payment Success!' : '❌ Payment Failed';
+  const subtitle = isSuccess
+    ? 'Your payment was successful.'
+    : 'Your payment could not be completed.';
+
   return (
     <div style={styles.page as React.CSSProperties}>
       <div style={styles.card as React.CSSProperties}>
         <div style={styles.logo as React.CSSProperties}>Senjoro Pay</div>
 
-        <h1 style={styles.title}>
-          {transaction.status === 'SUCCESS' ? '✅ Payment Success!' : '❌ Payment Failed'}
-        </h1>
+        <h1 style={styles.title}>{title}</h1>
         <p style={styles.subtitle}>Transaction ID: {transaction.transactionId}</p>
         <p style={styles.subtitle}>Amount: ${transaction.amount}</p>
-        <p style={styles.subtitle}>Status: {transaction.status} ({transaction.selcomStatus})</p>
+        <p style={styles.subtitle}>
+          Status: {transaction.status} ({transaction.selcomStatus})
+        </p>
+        <p style={styles.subtitle}>{subtitle}</p>
 
         <button style={styles.downloadBtn as React.CSSProperties} onClick={downloadReceipt}>
           ⬇️ Download receipt
         </button>
+
+        {!isSuccess && (
+          <a
+            href={`https://paylink-senjaropay.com/pay/${orderId}`}
+            style={styles.retryBtn as React.CSSProperties}
+          >
+            🔄 Retry Payment
+          </a>
+        )}
 
         <div style={styles.footer as React.CSSProperties}>Powered by Senjoro Pay</div>
       </div>
@@ -82,7 +102,6 @@ Thank you for your payment!
   );
 }
 
-// styles
 const styles = {
   page: {
     minHeight: '100vh',
@@ -102,9 +121,38 @@ const styles = {
     textAlign: 'center' as const,
     position: 'relative' as const,
   },
-  logo: { position: 'absolute' as const, left: 24, top: 18, fontSize: 14, color: '#2b2b2b', fontWeight: 600, opacity: 0.7 },
+  logo: {
+    position: 'absolute' as const,
+    left: 24,
+    top: 18,
+    fontSize: 14,
+    color: '#2b2b2b',
+    fontWeight: 600,
+    opacity: 0.7,
+  },
   title: { margin: '18px 0 6px', fontSize: 24, fontWeight: 700, color: '#111827' },
-  subtitle: { margin: 0, color: '#6b7280', fontSize: 14 },
-  downloadBtn: { marginTop: 20, width: '100%', padding: '14px 18px', borderRadius: 999, background: '#166534', color: 'white', border: 'none', fontSize: 16, cursor: 'pointer' },
+  subtitle: { margin: '6px 0', color: '#6b7280', fontSize: 14 },
+  downloadBtn: {
+    marginTop: 20,
+    width: '100%',
+    padding: '14px 18px',
+    borderRadius: 999,
+    background: '#166534',
+    color: 'white',
+    border: 'none',
+    fontSize: 16,
+    cursor: 'pointer',
+  },
+  retryBtn: {
+    display: 'inline-block',
+    marginTop: 12,
+    padding: '12px 18px',
+    borderRadius: 999,
+    background: '#b91c1c',
+    color: 'white',
+    fontSize: 16,
+    textDecoration: 'none',
+    cursor: 'pointer',
+  },
   footer: { marginTop: 18, color: '#9ca3af', fontSize: 12 },
 };
