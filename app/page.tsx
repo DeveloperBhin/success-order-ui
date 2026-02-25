@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 
 // Drop this file into a Next.js project at `pages/index.jsx` (or use CRA and render it as App).
