@@ -21,7 +21,7 @@ export default function SuccessPage({ params }: Props) {
   const [error, setError] = useState(false);
 
   // Temporary state to store user-provided x-session-id
-  const [sessionId, setSessionId] = useState('');
+  const [sessionId, setSessionId] = useState('9f2991be-8c76-4efc-9340-d90c6fa1c647');
 
   const fetchTransaction = async (sessionIdValue: string) => {
     try {
@@ -29,7 +29,7 @@ export default function SuccessPage({ params }: Props) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-session-id': '9f2991be-8c76-4efc-9340-d90c6fa1c647', // <-- pass it here
+          'x-session-id': sessionIdValue, // <-- pass it here
         },
         body: JSON.stringify({ transactionId: orderId }),
       });
